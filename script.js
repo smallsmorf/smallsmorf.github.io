@@ -173,4 +173,165 @@ document.addEventListener('DOMContentLoaded', function() {
             lazyImageObserver.observe(img);
         }
     });
+        // Initialize all project sliders
+        const sliders = document.querySelectorAll('.project-image-slider');
+        
+        sliders.forEach(slider => {
+            const images = slider.querySelectorAll('.slider-image');
+            const dots = slider.querySelectorAll('.slider-dot');
+            const prevBtn = slider.querySelector('.slider-prev');
+            const nextBtn = slider.querySelector('.slider-next');
+            const progressBar = slider.querySelector('.slider-progress');
+            
+            let currentIndex = 0;
+            let slideInterval;
+            
+            // Function to show specific slide
+            function showSlide(index) {
+                // Remove active class from all images and dots
+                images.forEach(img => img.classList.remove('active'));
+                dots.forEach(dot => dot.classList.remove('active'));
+                
+                // Add active class to current image and dot
+                images[index].classList.add('active');
+                if (dots[index]) {
+                    dots[index].classList.add('active');
+                }
+                
+                // Update progress bar
+                if (progressBar) {
+                    progressBar.style.width = '0%';
+                    
+                    // Use requestAnimationFrame for smoother animation
+                    requestAnimationFrame(() => {
+                        progressBar.style.transition = `width 5000ms linear`; // Match to slideInterval time
+                        progressBar.style.width = '100%';
+                    });
+                }
+                
+                currentIndex = index;
+            }
+            
+            // Make sure we have buttons before adding event listeners
+            if (prevBtn) {
+                // Event for previous button
+                prevBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    let index = currentIndex - 1;
+                    if (index < 0) index = images.length - 1;
+                    showSlide(index);
+                    
+                    // Reset the interval when manually changing slides
+                    resetInterval();
+                });
+            }
+            
+            if (nextBtn) {
+                // Event for next button
+                nextBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    let index = currentIndex + 1;
+                    if (index >= images.length) index = 0;
+                    showSlide(index);
+                    
+                    // Reset the interval when manually changing slides
+                    resetInterval();
+                });
+            }
+            
+            // Event for dots
+            dots.forEach(dot => {
+                dot.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const index = parseInt(dot.getAttribute('data-index'));
+                    showSlide(index);
+                    
+                    // Reset the interval when manually changing slides
+                    resetInterval();
+                });
+            });
+            
+            // Add swipe functionality for mobile
+            let touchStartX = 0;
+            let touchEndX = 0;
+    
+            slider.addEventListener('touchstart', e => {
+                touchStartX = e.changedTouches[0].screenX;
+                
+                // Pause auto-slide on touch
+                stopInterval();
+            });
+    
+            slider.addEventListener('touchend', e => {
+                touchEndX = e.changedTouches[0].screenX;
+                handleSwipe();
+                
+                // Resume auto-slide after touch
+                startInterval();
+            });
+    
+            function handleSwipe() {
+                const threshold = 50; // Minimum swipe distance
+                
+                if (touchEndX < touchStartX - threshold) {
+                    // Swipe left - go to next slide
+                    let index = currentIndex + 1;
+                    if (index >= images.length) index = 0;
+                    showSlide(index);
+                }
+                
+                if (touchEndX > touchStartX + threshold) {
+                    // Swipe right - go to previous slide
+                    let index = currentIndex - 1;
+                    if (index < 0) index = images.length - 1;
+                    showSlide(index);
+                }
+            }
+            
+            // Auto slide functions
+            function startInterval() {
+                // Clear any existing interval first
+                stopInterval();
+                
+                // Start a new interval
+                slideInterval = setInterval(() => {
+                    let index = currentIndex + 1;
+                    if (index >= images.length) index = 0;
+                    showSlide(index);
+                }, 5000); // Change slide every 5 seconds
+            }
+            
+            function stopInterval() {
+                if (slideInterval) {
+                    clearInterval(slideInterval);
+                    
+                    // Also pause the progress animation if we have a progress bar
+                    if (progressBar) {
+                        const computedStyle = window.getComputedStyle(progressBar);
+                        const width = computedStyle.getPropertyValue('width');
+                        
+                        progressBar.style.transition = 'none';
+                        progressBar.style.width = width;
+                    }
+                }
+            }
+            
+            function resetInterval() {
+                stopInterval();
+                startInterval();
+            }
+            
+            // Start auto-sliding
+            startInterval();
+            
+            // Pause auto-slide on hover
+            slider.addEventListener('mouseenter', stopInterval);
+            slider.addEventListener('mouseleave', startInterval);
+            
+            // Initialize the first slide
+            showSlide(0);
+            
+            // Log to console to verify slider is initialized
+            console.log('Slider initialized with', images.length, 'images');
+        });
 });
